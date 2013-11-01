@@ -96,10 +96,25 @@ namespace PdfViewer
             }
         }
 
+		/// <summary>
+		/// 
+		/// </summary>
+		public abstract string FileName { get; set; }
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public abstract float Height { get; set; }
+
         /// <summary>
         /// Number of pages in the PDF document.
         /// </summary>
         public abstract int PageCount { get; }
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public abstract float Width { get; set; }
 
         /// <summary>
         /// Renders a page of the PDF document to the provided graphics instance.

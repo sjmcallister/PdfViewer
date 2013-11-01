@@ -13,6 +13,8 @@ namespace PdfViewer.Chrome
     {
         private bool _disposed;
         private PdfFile _file;
+		private float _height;
+		private float _width;
         private readonly int _pageCount;
 
         public override int PageCount
@@ -133,5 +135,35 @@ namespace PdfViewer.Chrome
                 _disposed = true;
             }
         }
-    }
+
+		public override float Height
+		{
+			get
+			{
+				return _height;
+			}
+			set
+			{
+				_height = value;
+			}
+		}
+
+		public override float Width
+		{
+			get
+			{
+				return _width;
+			}
+			set
+			{
+				_width = value;
+			}
+		}
+
+		public override string FileName
+		{
+			get;
+			set;
+		}
+	}
 }

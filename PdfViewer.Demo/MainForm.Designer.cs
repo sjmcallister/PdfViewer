@@ -28,28 +28,30 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.pdfViewer1 = new global::PdfViewer.PdfViewer();
-            this.SuspendLayout();
-            // 
-            // pdfViewer1
-            // 
-            this.pdfViewer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pdfViewer1.Document = null;
-            this.pdfViewer1.Location = new System.Drawing.Point(0, 0);
-            this.pdfViewer1.Name = "pdfViewer1";
-            this.pdfViewer1.Size = new System.Drawing.Size(585, 595);
-            this.pdfViewer1.TabIndex = 0;
-            // 
-            // MainForm
-            // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(585, 595);
-            this.Controls.Add(this.pdfViewer1);
-            this.Name = "MainForm";
-            this.Text = "Form1";
-            this.Shown += new System.EventHandler(this.MainForm_Shown);
-            this.ResumeLayout(false);
+			this.pdfViewer1 = new global::PdfViewer.PdfViewer();
+			this.SuspendLayout();
+			// 
+			// pdfViewer1
+			// 
+			this.pdfViewer1.DefaultDocumentName = null;
+			this.pdfViewer1.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.pdfViewer1.Document = null;
+			this.pdfViewer1.Location = new System.Drawing.Point(0, 0);
+			this.pdfViewer1.Name = "pdfViewer1";
+			this.pdfViewer1.Size = new System.Drawing.Size(585, 595);
+			this.pdfViewer1.TabIndex = 0;
+			// 
+			// MainForm
+			// 
+			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+			this.ClientSize = new System.Drawing.Size(585, 595);
+			this.Controls.Add(this.pdfViewer1);
+			this.Name = "MainForm";
+			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+			this.Text = "Form1";
+			this.Shown += new System.EventHandler(this.MainForm_Shown);
+			this.ResumeLayout(false);
 
         }
 

@@ -27,8 +27,8 @@ namespace PdfViewer.XPdf
                 throw new ArgumentNullException("path");
 
             _path = path;
-
             _document.LoadPDF(path);
+			FileName = _path;
         }
 
         public PdfDocument(Stream stream)
@@ -39,10 +39,28 @@ namespace PdfViewer.XPdf
             _document.LoadPDF(stream);
         }
 
-        public override int PageCount
-        {
-            get { return _document.PageCount; }
-        }
+		public override string FileName
+		{
+			get;
+			set;
+		}
+
+		public override float Height
+		{
+			get;
+			set;
+		}
+
+		public override int PageCount
+		{
+			get { return _document.PageCount; }
+		}
+
+		public override float Width
+		{
+			get;
+			set;
+		}
 
         public override void Render(int page, Graphics graphics, float dpiX, float dpiY, Rectangle bounds)
         {
@@ -121,5 +139,5 @@ namespace PdfViewer.XPdf
                 _disposed = true;
             }
         }
-    }
+	}
 }

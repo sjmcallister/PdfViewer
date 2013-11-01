@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using iTextSharp.text.pdf;
 
 namespace PdfViewer
 {
@@ -13,7 +14,7 @@ namespace PdfViewer
     public class PdfRenderer : PanningZoomingScrollControl
     {
         private static readonly Padding PageMargin = new Padding(4);
-        private static readonly DefaultSettings DefaultSettings = new DefaultSettings();
+        private static DefaultSettings DefaultSettings = new DefaultSettings();
 
         private int _height;
         private bool _disposed;
@@ -24,6 +25,7 @@ namespace PdfViewer
         private int _suspendPaintCount;
         private PdfDocument _document;
         private ToolTip _toolTip;
+		private PdfReader _reader = null;
 
         /// <summary>
         /// Gets or sets a value indicating whether the user can give the focus to this control using the TAB key.
@@ -80,6 +82,20 @@ namespace PdfViewer
                 throw new ArgumentException("Document does not contain any pages", "document");
 
             _document = document;
+			_reader = new PdfReader(_document.FileName);
+
+			if (_reader.GetPageRotation(1) > 0)
+			{
+				DefaultSettings = new DefaultSettings(_reader.GetPageSize(1).Height / .72F, _reader.GetPageSize(1).Width / .72F);
+				_document.Height = _reader.GetPageSize(1).Width;
+				_document.Width = _reader.GetPageSize(1).Height;
+			}
+			else
+			{
+				DefaultSettings = new DefaultSettings(_reader.GetPageSize(1).Width / .72F, _reader.GetPageSize(1).Height / .72F);
+				_document.Height = _reader.GetPageSize(1).Height;
+				_document.Width = _reader.GetPageSize(1).Width;
+			}
 
             _height = DefaultSettings.Height * _document.PageCount;
 
@@ -192,9 +208,9 @@ namespace PdfViewer
 
             for (int page = 0; page < _document.PageCount; page++)
             {
-                int height = (int)(DefaultSettings.Height * _scaleFactor);
+				int height = (int)(DefaultSettings.Height * _scaleFactor);
                 int fullHeight = height + ShadeBorder.Size.Vertical + PageMargin.Vertical;
-                int width = (int)(DefaultSettings.Width * _scaleFactor);
+				int width = (int)(DefaultSettings.Width * _scaleFactor);
                 int fullWidth = width + ShadeBorder.Size.Horizontal + PageMargin.Horizontal;
 
                 if (e.ClipRectangle.IntersectsWith(new Rectangle(
@@ -213,7 +229,7 @@ namespace PdfViewer
 
                     e.Graphics.FillRectangle(Brushes.White, pageBounds);
 
-                    DrawPageImage(e.Graphics, page, pageBounds, e.ClipRectangle);
+					DrawPageImage(e.Graphics, page, pageBounds, e.ClipRectangle);
 
                     _shadeBorder.Draw(e.Graphics, pageBounds);
                 }
@@ -289,21 +305,20 @@ namespace PdfViewer
             {
                 // This throws when there isn't enough memory available.
 
-                image = new Bitmap(size.Width, size.Height);
+				image = new Bitmap((int)_document.Width, (int)_document.Height);
             }
             catch
             {
                 return null;
             }
 
-            // We render at a minimum of 150 DPI. Everything below this turns
-            // into crap.
+            // We render at a minimum of 150 DPI. Everything below this turns into crap.
 
-            int imageDpi = (int)(((double)size.Width / DefaultSettings.Width) * DefaultSettings.DpiX);
+			int imageDpi = (int)(((double)size.Width / _document.Width) * 96);
             int renderDpi = Math.Max(150, imageDpi);
 
-            int targetWidth = (int)(((double)DefaultSettings.Width / DefaultSettings.DpiX) * renderDpi);
-            int targetHeight = (int)(((double)DefaultSettings.Height / DefaultSettings.DpiY) * renderDpi);
+			int targetWidth = (int)(((double)_document.Width / 96) * renderDpi);
+			int targetHeight = (int)(((double)_document.Height / 96) * renderDpi);
 
             if (imageDpi == renderDpi)
             {
@@ -322,8 +337,8 @@ namespace PdfViewer
                             new Rectangle(
                                 0,
                                 0,
-                                image.Width,
-                                image.Height
+                                targetWidth,
+                                targetHeight
                             )
                         );
                     }

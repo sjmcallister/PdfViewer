@@ -13,6 +13,53 @@ namespace PdfViewer
         public int Width { get; private set; }
         public int Height { get; private set; }
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="width"></param>
+		/// <param name="height"></param>
+		public DefaultSettings(float width, float height)
+		{
+			using (var dialog = new PrintDialog())
+			{
+				bool found = false;
+
+				try
+				{
+					foreach (PrinterResolution resolution in dialog.PrinterSettings.PrinterResolutions)
+					{
+						if (resolution.Kind == PrinterResolutionKind.Custom)
+						{
+							DpiX = resolution.X;
+							DpiY = resolution.Y;
+							Width = (int)((width / 100.0) * resolution.X);
+							Height = (int)((height / 100.0) * resolution.Y);
+
+							found = true;
+							break;
+						}
+					}
+				}
+				catch
+				{
+					// Ignore any exceptions; just use defaults.
+				}
+
+				if (!found)
+				{
+					// Default to A4 size.
+
+					DpiX = 600;
+					DpiY = 500;
+					Width = (int)(8.27 * DpiX);
+					Height = (int)(11.69 * DpiY);
+				}
+			}
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
         public DefaultSettings()
         {
             using (var dialog = new PrintDialog())
