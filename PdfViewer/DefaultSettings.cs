@@ -16,9 +16,8 @@ namespace PdfViewer
 		/// <summary>
 		/// 
 		/// </summary>
-		/// <param name="width"></param>
-		/// <param name="height"></param>
-		public DefaultSettings(float width, float height)
+		/// <param name="landscape"></param>
+		public DefaultSettings(bool landscape)
 		{
 			using (var dialog = new PrintDialog())
 			{
@@ -26,17 +25,36 @@ namespace PdfViewer
 
 				try
 				{
-					foreach (PrinterResolution resolution in dialog.PrinterSettings.PrinterResolutions)
+					if (landscape)
 					{
-						if (resolution.Kind == PrinterResolutionKind.Custom)
+						foreach (PrinterResolution resolution in dialog.PrinterSettings.PrinterResolutions)
 						{
-							DpiX = resolution.X;
-							DpiY = resolution.Y;
-							Width = (int)((width / 100.0) * resolution.X);
-							Height = (int)((height / 100.0) * resolution.Y);
+							if (resolution.Kind == PrinterResolutionKind.Custom)
+							{
+								DpiX = resolution.X;
+								DpiY = resolution.Y;
+								Width = (int)((dialog.PrinterSettings.DefaultPageSettings.PaperSize.Height / 100.0) * resolution.X);
+								Height = (int)((dialog.PrinterSettings.DefaultPageSettings.PaperSize.Width / 100.0) * resolution.Y);
 
-							found = true;
-							break;
+								found = true;
+								break;
+							}
+						}
+					}
+					else
+					{
+						foreach (PrinterResolution resolution in dialog.PrinterSettings.PrinterResolutions)
+						{
+							if (resolution.Kind == PrinterResolutionKind.Custom)
+							{
+								DpiX = resolution.X;
+								DpiY = resolution.Y;
+								Width = (int)((dialog.PrinterSettings.DefaultPageSettings.PaperSize.Width / 100.0) * resolution.X);
+								Height = (int)((dialog.PrinterSettings.DefaultPageSettings.PaperSize.Height / 100.0) * resolution.Y);
+
+								found = true;
+								break;
+							}
 						}
 					}
 				}
@@ -50,9 +68,9 @@ namespace PdfViewer
 					// Default to A4 size.
 
 					DpiX = 600;
-					DpiY = 500;
-					Width = (int)(8.27 * DpiX);
-					Height = (int)(11.69 * DpiY);
+					DpiY = 600;
+					Width = (int)(8.5 * DpiX);
+					Height = (int)(11 * DpiY);
 				}
 			}
 		}
@@ -92,9 +110,9 @@ namespace PdfViewer
                     // Default to A4 size.
 
                     DpiX = 600;
-                    DpiY = 500;
-                    Width = (int)(8.27 * DpiX);
-                    Height = (int)(11.69 * DpiY);
+                    DpiY = 600;
+                    Width = (int)(8.5 * DpiX);
+                    Height = (int)(11 * DpiY);
                 }
             }
         }

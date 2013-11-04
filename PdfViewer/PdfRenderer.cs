@@ -86,18 +86,20 @@ namespace PdfViewer
 
 			if (_reader.GetPageRotation(1) > 0)
 			{
-				DefaultSettings = new DefaultSettings(_reader.GetPageSize(1).Height / .72F, _reader.GetPageSize(1).Width / .72F);
+				DefaultSettings = new DefaultSettings(true);
 				_document.Height = _reader.GetPageSize(1).Width;
 				_document.Width = _reader.GetPageSize(1).Height;
 			}
 			else
 			{
-				DefaultSettings = new DefaultSettings(_reader.GetPageSize(1).Width / .72F, _reader.GetPageSize(1).Height / .72F);
+				DefaultSettings = new DefaultSettings(false);
 				_document.Height = _reader.GetPageSize(1).Height;
 				_document.Width = _reader.GetPageSize(1).Width;
 			}
 
             _height = DefaultSettings.Height * _document.PageCount;
+
+			_reader.Close();
 
             UpdateScrollbars();
 
@@ -213,12 +215,7 @@ namespace PdfViewer
 				int width = (int)(DefaultSettings.Width * _scaleFactor);
                 int fullWidth = width + ShadeBorder.Size.Horizontal + PageMargin.Horizontal;
 
-                if (e.ClipRectangle.IntersectsWith(new Rectangle(
-                    leftOffset,
-                    offset + topOffset,
-                    fullWidth,
-                    fullHeight
-                )))
+                if (e.ClipRectangle.IntersectsWith(new Rectangle(leftOffset, offset + topOffset, fullWidth, fullHeight)))
                 {
                     var pageBounds = new Rectangle(
                         leftOffset + ShadeBorder.Size.Left + PageMargin.Left,
@@ -305,7 +302,7 @@ namespace PdfViewer
             {
                 // This throws when there isn't enough memory available.
 
-				image = new Bitmap((int)_document.Width, (int)_document.Height);
+				image = new Bitmap(size.Width, size.Height);
             }
             catch
             {
@@ -314,11 +311,11 @@ namespace PdfViewer
 
             // We render at a minimum of 150 DPI. Everything below this turns into crap.
 
-			int imageDpi = (int)(((double)size.Width / _document.Width) * 96);
+			int imageDpi = (int)(((double)size.Width / DefaultSettings.Width) * DefaultSettings.DpiX);
             int renderDpi = Math.Max(150, imageDpi);
 
-			int targetWidth = (int)(((double)_document.Width / 96) * renderDpi);
-			int targetHeight = (int)(((double)_document.Height / 96) * renderDpi);
+			int targetWidth = (int)(((double)DefaultSettings.Width / DefaultSettings.DpiX) * renderDpi);
+			int targetHeight = (int)(((double)DefaultSettings.Height / DefaultSettings.DpiY) * renderDpi);
 
             if (imageDpi == renderDpi)
             {
@@ -332,15 +329,7 @@ namespace PdfViewer
 
                     using (var graphics = Graphics.FromImage(image))
                     {
-                        graphics.DrawImage(
-                            fullImage,
-                            new Rectangle(
-                                0,
-                                0,
-                                targetWidth,
-                                targetHeight
-                            )
-                        );
+                        graphics.DrawImage(fullImage, new Rectangle(0, 0, (int)_document.Width, (int)_document.Height));
                     }
                 }
             }
@@ -356,18 +345,7 @@ namespace PdfViewer
         {
             using (var graphics = Graphics.FromImage(image))
             {
-                _document.Render(
-                    page,
-                    graphics,
-                    graphics.DpiX,
-                    graphics.DpiY,
-                    new Rectangle(
-                        0,
-                        0,
-                        image.Width,
-                        image.Height
-                    )
-                );
+                _document.Render(page, graphics, graphics.DpiX, graphics.DpiY, new Rectangle(0, 0, image.Width, image.Height));
             }
         }
 
@@ -428,6 +406,12 @@ namespace PdfViewer
                     _toolTip.Dispose();
                     _toolTip = null;
                 }
+
+				if (_reader != null)
+				{
+					_reader.Dispose();
+					_reader = null;
+				}
 
                 _disposed = true;
             }
