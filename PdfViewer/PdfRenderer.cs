@@ -14,7 +14,7 @@ namespace PdfViewer
     public class PdfRenderer : PanningZoomingScrollControl
     {
         private static readonly Padding PageMargin = new Padding(4);
-        private static DefaultSettings DefaultSettings = new DefaultSettings();
+        //private static DefaultSettings DefaultSettings = null;
 
         private int _height;
         private bool _disposed;
@@ -25,7 +25,6 @@ namespace PdfViewer
         private int _suspendPaintCount;
         private PdfDocument _document;
         private ToolTip _toolTip;
-		private PdfReader _reader = null;
 
         /// <summary>
         /// Gets or sets a value indicating whether the user can give the focus to this control using the TAB key.
@@ -82,24 +81,25 @@ namespace PdfViewer
                 throw new ArgumentException("Document does not contain any pages", "document");
 
             _document = document;
-			_reader = new PdfReader(_document.FileName);
 
-			if (_reader.GetPageRotation(1) > 0)
+			using (var _reader = new PdfReader(_document.FileName))
 			{
-				DefaultSettings = new DefaultSettings(true);
-				_document.Height = _reader.GetPageSize(1).Width;
-				_document.Width = _reader.GetPageSize(1).Height;
-			}
-			else
-			{
-				DefaultSettings = new DefaultSettings(false);
-				_document.Height = _reader.GetPageSize(1).Height;
-				_document.Width = _reader.GetPageSize(1).Width;
+				if (_reader.GetPageRotation(1) > 0)
+				{
+					//DefaultSettings = new DefaultSettings(true);
+					_document.Height = (_reader.GetPageSize(1).Width / 72F) * 96;
+					_document.Width = (_reader.GetPageSize(1).Height / 72F) * 96;
+				}
+				else
+				{
+					//DefaultSettings = new DefaultSettings(false);
+					_document.Height = (_reader.GetPageSize(1).Width / 72F) * 96;
+					_document.Width = (_reader.GetPageSize(1).Height / 72F) * 96;
+				}
+				_reader.Close();
 			}
 
-            _height = DefaultSettings.Height * _document.PageCount;
-
-			_reader.Close();
+			_height = (int)_document.Height * _document.PageCount;
 
             UpdateScrollbars();
 
@@ -183,7 +183,7 @@ namespace PdfViewer
             // Scale factor determines what we need to multiply the dimensions
             // of the metafile with to get the size in the control.
 
-            _scaleFactor = ((double)height / DefaultSettings.Height) * Zoom;
+            _scaleFactor = ((double)height / _document.Height) * Zoom;
         }
 
         /// <summary>
@@ -197,7 +197,7 @@ namespace PdfViewer
 
             var bounds = GetScrollClientArea();
 
-            int maxWidth = (int)(DefaultSettings.Width * _scaleFactor) + ShadeBorder.Size.Horizontal + PageMargin.Horizontal;
+			int maxWidth = (int)(_document.Width * _scaleFactor) + ShadeBorder.Size.Horizontal + PageMargin.Horizontal;
             int leftOffset = HScroll ? DisplayRectangle.X : (bounds.Width - maxWidth) / 2;
             int topOffset = VScroll ? DisplayRectangle.Y : 0;
 
@@ -210,19 +210,14 @@ namespace PdfViewer
 
             for (int page = 0; page < _document.PageCount; page++)
             {
-				int height = (int)(DefaultSettings.Height * _scaleFactor);
+				int height = (int)(_document.Height * _scaleFactor);
                 int fullHeight = height + ShadeBorder.Size.Vertical + PageMargin.Vertical;
-				int width = (int)(DefaultSettings.Width * _scaleFactor);
+				int width = (int)(_document.Width * _scaleFactor);
                 int fullWidth = width + ShadeBorder.Size.Horizontal + PageMargin.Horizontal;
 
                 if (e.ClipRectangle.IntersectsWith(new Rectangle(leftOffset, offset + topOffset, fullWidth, fullHeight)))
                 {
-                    var pageBounds = new Rectangle(
-                        leftOffset + ShadeBorder.Size.Left + PageMargin.Left,
-                        offset + topOffset + ShadeBorder.Size.Top + PageMargin.Top,
-                        width,
-                        height
-                    );
+                    var pageBounds = new Rectangle(leftOffset + ShadeBorder.Size.Left + PageMargin.Left, offset + topOffset + ShadeBorder.Size.Top + PageMargin.Top, width, height);
 
                     e.Graphics.FillRectangle(Brushes.White, pageBounds);
 
@@ -237,7 +232,7 @@ namespace PdfViewer
 
         private void DrawPageImage(Graphics graphics, int page, Rectangle pageBounds, Rectangle clip)
         {
-            var pageImage = GetPageImage(page, pageBounds.Size);
+            var pageImage = GetPageImage(page, new Size((int)_document.Width, (int)_document.Height));
 
             if (pageImage == null)
                 return;
@@ -245,8 +240,8 @@ namespace PdfViewer
             var srcBounds = new Rectangle(
                 Math.Max(clip.Left - pageBounds.Left, 0),
                 Math.Max(clip.Top - pageBounds.Top, 0),
-                Math.Min(clip.Right - pageBounds.Left, pageBounds.Width),
-                Math.Min(clip.Bottom - pageBounds.Top, pageBounds.Height)
+				Math.Min(clip.Right - pageBounds.Left, (int)_document.Width),
+				Math.Min(clip.Bottom - pageBounds.Top, (int)_document.Height)
             );
 
             var destBounds = new Rectangle(
@@ -311,19 +306,19 @@ namespace PdfViewer
 
             // We render at a minimum of 150 DPI. Everything below this turns into crap.
 
-			int imageDpi = (int)(((double)size.Width / DefaultSettings.Width) * DefaultSettings.DpiX);
-            int renderDpi = Math.Max(150, imageDpi);
+			int imageDpi = (int)(((double)size.Width / _document.Width) * 96);
+            int renderDpi = Math.Max(96, imageDpi);
 
-			int targetWidth = (int)(((double)DefaultSettings.Width / DefaultSettings.DpiX) * renderDpi);
-			int targetHeight = (int)(((double)DefaultSettings.Height / DefaultSettings.DpiY) * renderDpi);
+			int targetWidth = (int)((_document.Width / 96F) * renderDpi);
+			int targetHeight = (int)((_document.Height / 96F) * renderDpi);
 
-            if (imageDpi == renderDpi)
+            if (imageDpi <= renderDpi)
             {
                 RenderPage(page, image);
             }
             else
             {
-                using (var fullImage = new Bitmap(targetWidth, targetHeight))
+				using (var fullImage = new Bitmap(targetWidth, targetHeight))
                 {
                     RenderPage(page, fullImage);
 
@@ -362,27 +357,17 @@ namespace PdfViewer
         protected override Rectangle GetDocumentBounds()
         {
             int height = (int)(_height * _scaleFactor + (ShadeBorder.Size.Vertical + PageMargin.Vertical) * _document.PageCount);
-            int width = (int)(DefaultSettings.Width * _scaleFactor + ShadeBorder.Size.Horizontal + PageMargin.Horizontal);
+			int width = (int)(_document.Width * _scaleFactor + ShadeBorder.Size.Horizontal + PageMargin.Horizontal);
             
-            var center = new Point(
-                DisplayRectangle.Width / 2,
-                DisplayRectangle.Height / 2
-            );
+            var center = new Point(DisplayRectangle.Width / 2, DisplayRectangle.Height / 2);
 
-            if (
-                DisplayRectangle.Width > ClientSize.Width ||
-                DisplayRectangle.Height > ClientSize.Height
-            ) {
+            if (DisplayRectangle.Width > ClientSize.Width || DisplayRectangle.Height > ClientSize.Height) 
+			{
                 center.X += DisplayRectangle.Left;
                 center.Y += DisplayRectangle.Top;
             }
 
-            return new Rectangle(
-                center.X - width / 2,
-                center.Y - height / 2,
-                width,
-                height
-            );
+            return new Rectangle(center.X - width / 2, center.Y - height / 2, width, height);
         }
 
         /// <summary>
@@ -406,12 +391,6 @@ namespace PdfViewer
                     _toolTip.Dispose();
                     _toolTip = null;
                 }
-
-				if (_reader != null)
-				{
-					_reader.Dispose();
-					_reader = null;
-				}
 
                 _disposed = true;
             }

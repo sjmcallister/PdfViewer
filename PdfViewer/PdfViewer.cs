@@ -80,13 +80,7 @@ namespace PdfViewer
                     }
                     catch
                     {
-                        MessageBox.Show(
-                            FindForm(),
-                            Properties.Resources.SaveAsFailedText,
-                            Properties.Resources.SaveAsFailedTitle,
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error
-                        );
+                        MessageBox.Show(FindForm(), Properties.Resources.SaveAsFailedText, Properties.Resources.SaveAsFailedTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
