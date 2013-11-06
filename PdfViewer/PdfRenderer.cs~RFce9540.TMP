@@ -14,7 +14,7 @@ namespace PdfViewer
     public class PdfRenderer : PanningZoomingScrollControl
     {
         private static readonly Padding PageMargin = new Padding(4);
-        //private static DefaultSettings DefaultSettings = null;
+        private static DefaultSettings DefaultSettings = null;
 
         private int _height;
         private bool _disposed;
@@ -86,13 +86,13 @@ namespace PdfViewer
 			{
 				if (_reader.GetPageRotation(1) > 0)
 				{
-					//DefaultSettings = new DefaultSettings(true);
+					DefaultSettings = new DefaultSettings(true);
 					_document.Height = (_reader.GetPageSize(1).Width / 72F) * 96;
 					_document.Width = (_reader.GetPageSize(1).Height / 72F) * 96;
 				}
 				else
 				{
-					//DefaultSettings = new DefaultSettings(false);
+					DefaultSettings = new DefaultSettings(false);
 					_document.Height = (_reader.GetPageSize(1).Width / 72F) * 96;
 					_document.Width = (_reader.GetPageSize(1).Height / 72F) * 96;
 				}
@@ -232,7 +232,7 @@ namespace PdfViewer
 
         private void DrawPageImage(Graphics graphics, int page, Rectangle pageBounds, Rectangle clip)
         {
-            var pageImage = GetPageImage(page, new Size((int)_document.Width, (int)_document.Height));
+            var pageImage = GetPageImage(page, pageBounds.Size);
 
             if (pageImage == null)
                 return;
@@ -240,8 +240,8 @@ namespace PdfViewer
             var srcBounds = new Rectangle(
                 Math.Max(clip.Left - pageBounds.Left, 0),
                 Math.Max(clip.Top - pageBounds.Top, 0),
-				Math.Min(clip.Right - pageBounds.Left, pageBounds.Width),
-				Math.Min(clip.Bottom - pageBounds.Top, pageBounds.Height)
+                Math.Min(clip.Right - pageBounds.Left, pageBounds.Width),
+                Math.Min(clip.Bottom - pageBounds.Top, pageBounds.Height)
             );
 
             var destBounds = new Rectangle(
@@ -307,18 +307,18 @@ namespace PdfViewer
             // We render at a minimum of 150 DPI. Everything below this turns into crap.
 
 			int imageDpi = (int)(((double)size.Width / _document.Width) * 96);
-            int renderDpi = Math.Max(96, imageDpi);
+            int renderDpi = Math.Max(150, imageDpi);
 
-			int targetWidth = (int)((_document.Width / 96F) * renderDpi);
-			int targetHeight = (int)((_document.Height / 96F) * renderDpi);
+			int targetWidth = (int)(((double)_document.Width / DefaultSettings.DpiX) * renderDpi);
+			int targetHeight = (int)(((double)_document.Height / DefaultSettings.DpiY) * renderDpi);
 
-            if (imageDpi <= renderDpi)
+            if (imageDpi == renderDpi)
             {
                 RenderPage(page, image);
             }
             else
             {
-				using (var fullImage = new Bitmap(targetWidth, targetHeight))
+				using (var fullImage = new Bitmap((int)_document.Width, (int)_document.Height))
                 {
                     RenderPage(page, fullImage);
 
